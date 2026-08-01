@@ -1,0 +1,20 @@
+# Variables de entorno secretas
+.env
+
+# Archivos temporales de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Entornos virtuales
+.venv/
+venv/
+ENV/
+
+# Archivos de salida y audio temporales
+outputs/
+*.wav
+*.mp3
+*.m4a
+*.webm
