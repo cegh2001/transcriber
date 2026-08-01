@@ -12,9 +12,11 @@ __pycache__/
 venv/
 ENV/
 
-# Archivos de salida y audio temporales
+# Archivos de salida y multimedia temporales
 outputs/
 *.wav
 *.mp3
 *.m4a
 *.webm
+*.mp4
+test_*
