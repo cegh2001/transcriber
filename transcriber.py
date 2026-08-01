@@ -46,7 +46,7 @@ def save_results(result: dict, output_dir: str, base_filename: str):
     "-md",
     type=str,
     default=None,
-    help="Modelo a usar (ej. 'gemini-2.5-flash' para cloud, o 'large-v3'/'medium'/'turbo' para local).",
+    help="Modelo a usar (ej. 'gemini-3.6-flash' para cloud, o 'large-v3'/'medium'/'turbo' para local).",
 )
 @click.option("--output-dir", "-o", type=str, default="outputs", help="Directorio para guardar los resultados.")
 def main(url: str, mode: str, model: str, output_dir: str):
@@ -84,9 +84,9 @@ def main(url: str, mode: str, model: str, output_dir: str):
     with console.status("[bold green]Descargando audio del video con yt-dlp...[/bold green]", spinner="dots"):
         try:
             audio_path = extract_audio(url)
-            console.print(f"[bold green]✓ Audio descargado correctamente:[/bold green] {audio_path}")
+            console.print(f"[bold green][OK] Audio descargado correctamente:[/bold green] {audio_path}")
         except Exception as e:
-            console.print(f"[bold red]✗ Error al descargar el audio:[/bold red] {e}")
+            console.print(f"[bold red][ERROR] Error al descargar el audio:[/bold red] {e}")
             sys.exit(1)
 
     # Paso 2: Transcribir
@@ -100,9 +100,9 @@ def main(url: str, mode: str, model: str, output_dir: str):
                 result = transcribe_cloud(audio_path, model_name=model)
             else:
                 result = transcribe_local(audio_path, model_size=model)
-            console.print(f"[bold green]✓ Transcripción completada exitosamente con {result.get('engine')}![/bold green]")
+            console.print(f"[bold green][OK] Transcripción completada exitosamente con {result.get('engine')}![/bold green]")
         except Exception as e:
-            console.print(f"[bold red]✗ Error durante la transcripción:[/bold red] {e}")
+            console.print(f"[bold red][ERROR] Error durante la transcripción:[/bold red] {e}")
             sys.exit(1)
         finally:
             # Limpiar archivo de audio temporal
@@ -129,8 +129,8 @@ def main(url: str, mode: str, model: str, output_dir: str):
 
     # Vista previa del texto
     console.print("\n[bold yellow]Vista Previa de la Transcripción:[/bold yellow]")
-    preview_text = result.get("text", "")[:400]
-    if len(result.get("text", "")) > 400:
+    preview_text = result.get("text", "")[:600]
+    if len(result.get("text", "")) > 600:
         preview_text += "..."
     console.print(Panel(preview_text, border_style="dim"))
 
