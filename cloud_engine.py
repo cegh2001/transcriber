@@ -1,23 +1,26 @@
 import os
 import time
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 
-def transcribe_cloud(audio_path: str, api_key: str = None, model_name: str = "gemini-2.5-flash") -> Dict[str, Any]:
+def transcribe_cloud(
+    audio_path: str,
+    api_key: str = None,
+    model_name: str = "gemini-3.6-flash",
+    fallback_models: List[str] = None
+) -> Dict[str, Any]:
     """
-    Transcribe un archivo de audio utilizando la API de Google Gemini (Free Tier).
-    Retorna un diccionario con el texto transcribido y formato SRT/VTT.
+    Transcribe un archivo de audio utilizando la API de Google Gemini.
+    Intenta usar model_name (gemini-3.6-flash por defecto) y realiza fallback a modelos anteriores (gemini-3.5-flash) si falla.
     """
     key = api_key or os.getenv("GEMINI_API_KEY")
     if not key:
         raise ValueError(
-            "No se encontró GEMINI_API_KEY. Definila como variable de entorno o pasala al comando."
+            "No se encontró GEMINI_API_KEY. Definila en el archivo .env o como variable de entorno."
         )
 
-    # Importar google-genai
     try:
         from google import genai
-        from google.genai import types
         client = genai.Client(api_key=key)
     except ImportError:
         raise ImportError(
@@ -37,7 +40,7 @@ def transcribe_cloud(audio_path: str, api_key: str = None, model_name: str = "ge
 
     prompt = """Procesa el archivo de audio adjunto y genera una transcripción con la MÁXIMA FIDELIDAD posible.
 Instrucciones:
-1. Proporciona la transcripción textual limpia y exacta en el idioma original hablada.
+1. Proporciona la transcripción textual limpia y exacta en el idioma original hablado.
 2. Si hay múltiples hablantes, identifícalos adecuadamente (Hablante 1, Hablante 2, etc.).
 3. Incluye signos de puntuación y capitalización adecuados.
 4. Al final, incluye la versión formateada en SRT con marcas de tiempo [HH:MM:SS,mmm --> HH:MM:SS,mmm].
@@ -50,20 +53,44 @@ Estructura tu respuesta exactamente así:
 [Aquí el bloque formateado en SRT]
 """
 
-    response = client.models.generate_content(
-        model=model_name,
-        contents=[audio_file, prompt]
-    )
+    models_to_try = [model_name]
+    if fallback_models:
+        for fb in fallback_models:
+            if fb not in models_to_try:
+                models_to_try.append(fb)
+    else:
+        default_fallbacks = ["gemini-3.5-flash", "gemini-2.5-flash"]
+        for fb in default_fallbacks:
+            if fb not in models_to_try:
+                models_to_try.append(fb)
 
-    # Limpiar archivo en servidores de Gemini despues del uso
+    last_error = None
+    response = None
+    successful_model = None
+
+    for m in models_to_try:
+        try:
+            response = client.models.generate_content(
+                model=m,
+                contents=[audio_file, prompt]
+            )
+            successful_model = m
+            break
+        except Exception as e:
+            last_error = e
+            continue
+
+    # Limpiar archivo en servidores de Gemini
     try:
         client.files.delete(name=audio_file.name)
     except Exception:
         pass
 
+    if not response or not response.text:
+        raise RuntimeError(f"Todos los modelos fallaron. Último error: {last_error}")
+
     full_output = response.text or ""
     
-    # Parsear respuesta
     text_part = full_output
     srt_part = ""
 
@@ -76,5 +103,5 @@ Estructura tu respuesta exactamente así:
         "text": text_part,
         "srt": srt_part,
         "raw_response": full_output,
-        "engine": f"Google Gemini ({model_name})"
+        "engine": f"Google Gemini ({successful_model})"
     }

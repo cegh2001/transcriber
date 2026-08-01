@@ -1,10 +1,13 @@
 import os
 import sys
 import click
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.table import Table
+
+load_dotenv()
 
 from downloader import extract_audio
 from cloud_engine import transcribe_cloud
@@ -73,7 +76,7 @@ def main(url: str, mode: str, model: str, output_dir: str):
     # Configuración por defecto del modelo según el modo
     if not model:
         if mode.lower() == "cloud":
-            model = "gemini-2.5-flash"
+            model = "gemini-3.6-flash"
         else:
             model = "large-v3"
 
